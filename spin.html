@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en"> 
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Lucky Spin</title> 
+  <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #ff9966, #ff5e62);
+            color: white;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        #balance {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px;
+        }
+        #bet-buttons button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: white;
+            color: black;
+            transition: transform 0.2s ease;
+        }
+        #bet-buttons button.selected {
+            transform: scale(1.2);
+            font-weight: bold;
+            background-color: gold;
+        }
+        #place-bet {
+            background-color: gold;
+            color: black;
+            font-size: 18px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        #wheel-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 30px auto;
+            border: 5px solid white;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        .wheel {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 50% 50%;
+            grid-template-rows: 50% 50%;
+            transform-origin: center;
+            transition: transform 3s ease-out;
+        }
+        .wheel div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: black;
+        }
+        .green { background-color: greenyellow; }
+        .red { background-color: red; color: white; }
+        .blue { background-color: dodgerblue; }
+        .yellow { background-color: yellow; }
+        #spin-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: limegreen;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        #result {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style> 
+ </head> 
+ <body> 
+  <h1>Lucky Spin Game</h1> 
+  <div id="balance">
+   Balance: ₹<span id="balance-amount">1000</span>
+  </div> 
+  <div id="bet-buttons"> <button onclick="selectBet(10, this)">₹10</button> <button onclick="selectBet(30, this)">₹30</button> <button onclick="selectBet(50, this)">₹50</button> <button onclick="selectBet(100, this)">₹100</button> <button onclick="selectBet(500, this)">₹500</button> <button onclick="selectBet(2000, this)">₹2000</button> 
+  </div> <button id="place-bet" onclick="placeBet()">PLACE BET</button> 
+  <div id="wheel-container"> 
+   <div id="wheel" class="wheel"> 
+    <div class="green">
+     ₹0
+    </div> 
+    <div class="red">
+     ₹0
+    </div> 
+    <div class="blue">
+     ₹0
+    </div> 
+    <div class="yellow">
+     ₹0
+    </div> 
+   </div> 
+  </div> <button id="spin-btn" onclick="spinWheel()" disabled>SPIN</button> 
+  <div id="result"></div> 
+  <script>
+        let balance = localStorage.getItem("balance") ? parseInt(localStorage.getItem("balance")) : 1000;
+        let selectedBet = 0;
+        let isBetPlaced = false;
+        let wheel = document.getElementById("wheel");
+        let balanceDisplay = document.getElementById("balance-amount");
+        let spinBtn = document.getElementById("spin-btn");
+        let resultDisplay = document.getElementById("result");
+        let prizeCells = document.querySelectorAll(".wheel div");
+
+        // بیلنس اپڈیٹ کرو اور لوکل اسٹوریج میں محفوظ کرو
+        function updateBalance() {
+            balanceDisplay.innerText = balance;
+            localStorage.setItem("balance", balance);
+        }
+        updateBalance();
+
+        function selectBet(amount, button) {
+            selectedBet = amount;
+
+            let buttons = document.querySelectorAll("#bet-buttons button");
+            buttons.forEach(btn => btn.classList.remove("selected"));
+            button.classList.add("selected");
+        }
+
+        function placeBet() {
+            if (selectedBet > 0 && balance >= selectedBet) {
+                balance -= selectedBet;
+                updateBalance();
+                isBetPlaced = true;
+                spinBtn.disabled = false;
+                resultDisplay.innerText = "";
+
+                // انعامی رقم سیٹ کرو
+                let prizes = [selectedBet * 2, selectedBet * 3, selectedBet * 5, 0];
+                for (let i = 0; i < 4; i++) {
+                    prizeCells[i].innerText = "₹" + prizes[i];
+                }
+            }
+        }
+
+        function spinWheel() {
+            if (!isBetPlaced) return;
+            isBetPlaced = false;
+            spinBtn.disabled = true;
+
+            let randomIndex = Math.floor(Math.random() * 4);
+            let rotation = (360 * 5) + (randomIndex * 90);
+            wheel.style.transform = `rotate(${rotation}deg)`;
+
+            setTimeout(() => {
+                let prizeWon = parseInt(prizeCells[randomIndex].innerText.replace("₹", ""));
+                balance += prizeWon;
+                updateBalance();
+
+                if (prizeWon > 0) {
+                    resultDisplay.innerText = "🎉 You Won ₹" + prizeWon;
+                    resultDisplay.style.color = "lightgreen";
+                } else {
+                    resultDisplay.innerText = "😢 You Lost ₹" + selectedBet;
+                    resultDisplay.style.color = "red";
+                }
+            }, 3000);
+        }
+
+  function sendBalanceToParent() {
+    const balance = localStorage.getItem("balance");
+    window.parent.postMessage({ balance }, "*");
+  }
+
+  // ہر سیکنڈ میں بیلنس بھیجو
+  setInterval(sendBalanceToParent, 1000);
+    </script> 
+ </body>
+</html>

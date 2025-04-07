@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en"> 
+<head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Number Prediction Game</title> 
+  <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: auto;
+            background: #27ae60;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .balance-timer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        .btn, .amount-btn {
+            display: inline-block;
+            padding: 10px;
+            margin: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 20px;
+            border: none;
+            color: blue;
+            transition: background 0.3s;
+        }
+        .small-btn { background: green; }
+        .big-btn { background: red; }
+        .num-btn {
+            width: 18%;
+            padding: 10px;
+            margin: 5px;
+            font-size: 18px;
+            background: white;
+            color: black;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .active { background: yellow !important; }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .history {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        .circle {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            margin: 2px;
+            border-radius: 50%;
+            background: white;
+            color: black;
+            font-weight: bold;
+        }
+    </style> 
+</head> 
+<body> 
+  <h2>SHOAIBMODSAPK</h2> 
+  <div class="container"> 
+   <div class="balance-timer"> 
+    <div>Balance: <span id="balance"></span></div> 
+    <div>Timer: <span id="timer">30</span>s</div> 
+   </div> 
+   <button class="btn small-btn" onclick="placeBet('small', this)">SMALL</button> 
+   <button class="btn big-btn" onclick="placeBet('big', this)">BIG</button> 
+   <h3>Number Bet</h3> 
+   <div>
+    <button class="num-btn" onclick="placeBet(0, this)">0</button> 
+    <button class="num-btn" onclick="placeBet(1, this)">1</button> 
+    <button class="num-btn" onclick="placeBet(2, this)">2</button> 
+    <button class="num-btn" onclick="placeBet(3, this)">3</button> 
+    <button class="num-btn" onclick="placeBet(4, this)">4</button> 
+   </div> 
+   <div>
+    <button class="num-btn" onclick="placeBet(5, this)">5</button> 
+    <button class="num-btn" onclick="placeBet(6, this)">6</button> 
+    <button class="num-btn" onclick="placeBet(7, this)">7</button> 
+    <button class="num-btn" onclick="placeBet(8, this)">8</button> 
+    <button class="num-btn" onclick="placeBet(9, this)">9</button> 
+   </div> 
+   <h3>Amount Bet</h3> 
+   <div>
+    <button class="amount-btn" onclick="selectAmount(10, this)">₹10</button> 
+    <button class="amount-btn" onclick="selectAmount(20, this)">₹20</button> 
+    <button class="amount-btn" onclick="selectAmount(50, this)">₹50</button> 
+    <button class="amount-btn" onclick="selectAmount(100, this)">₹100</button> 
+    <button class="amount-btn" onclick="selectAmount(500, this)">₹500</button> 
+   </div> 
+   <br> 
+   <div class="history">
+    Last 5 Results: <span id="history"></span>
+   </div> 
+  </div> 
+  <div id="popup" class="popup"></div> 
+  <script>
+        let balance = localStorage.getItem("balance") ? parseInt(localStorage.getItem("balance")) : 1000;
+        let selectedAmount = 10;
+        let userBets = {};
+        let lastFiveResults = localStorage.getItem("lastFiveResults") ? JSON.parse(localStorage.getItem("lastFiveResults")) : [];
+        let timer;
+
+        document.getElementById("balance").innerText = balance;
+        document.getElementById("history").innerHTML = lastFiveResults.map(num => `<span class="circle">${num}</span>`).join(" ");
+
+        function selectAmount(amount, btn) {
+            selectedAmount = amount;
+            resetHighlights();
+            btn.classList.add("active");
+        }
+
+        function placeBet(type, btn) {
+            if (balance < selectedAmount) {
+                alert("Insufficient Balance!");
+                return;
+            }
+            userBets[type] = (userBets[type] || 0) + selectedAmount;
+            balance -= selectedAmount;
+            document.getElementById("balance").innerText = balance;
+            localStorage.setItem("balance", balance);
+
+            resetHighlights();
+            btn.classList.add("active");
+        }
+
+        function resetHighlights() {
+            document.querySelectorAll(".active").forEach(btn => btn.classList.remove("active"));
+        }
+
+        function startTimer() {
+            let timeLeft = 10;
+            clearInterval(timer);
+            timer = setInterval(() => {
+                document.getElementById("timer").innerText = timeLeft;
+                if (timeLeft === 0) {
+                    clearInterval(timer);
+                    showResult();
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        function showResult() {
+            let resultNum;
+            
+            if (lastFiveResults.length < 5) {
+                resultNum = Math.floor(Math.random() * 10);
+            } else {
+                let sum = lastFiveResults.reduce((a, b) => a + b, 0);
+                if (sum === 17) {
+                    resultNum = 7;
+                } else {
+                    resultNum = sum % 10;
+                }
+            }
+            let resultType = resultNum < 5 ? "small" : "big";
+            let winAmount = 0;
+
+            for (let bet in userBets) {
+                if (bet === resultType) {
+                    winAmount += userBets[bet] * 2;
+                } else if (parseInt(bet) === resultNum) {
+                    winAmount += userBets[bet] * 9;
+                }
+            }
+
+            if (winAmount > 0) {
+                balance += winAmount;
+                document.getElementById("balance").innerText = balance;
+                localStorage.setItem("balance", balance);
+                showPopup(`Number: ${resultNum}<br>YOU WIN +${winAmount}`, "green");
+            } else {
+                showPopup(`Number: ${resultNum}<br>YOU LOSE`, "red");
+            }
+
+            lastFiveResults.unshift(resultNum);
+            if (lastFiveResults.length > 5) lastFiveResults.pop();
+            localStorage.setItem("lastFiveResults", JSON.stringify(lastFiveResults));
+            document.getElementById("history").innerHTML = lastFiveResults.map(num => `<span class="circle">${num}</span>`).join(" ");
+
+            userBets = {};
+            resetHighlights();
+            setTimeout(startTimer, 3000);
+        }
+
+        function showPopup(message, color) {
+            let popup = document.getElementById("popup");
+            popup.innerHTML = message;
+            popup.style.display = "block";
+            popup.style.backgroundColor = color;
+            setTimeout(() => { popup.style.display = "none"; }, 3000);
+        }
+
+        startTimer();
+  function sendBalanceToParent() {
+    const balance = localStorage.getItem("balance");
+    window.parent.postMessage({ balance }, "*");
+  }
+
+  // ہر سیکنڈ میں بیلنس بھیجو
+  setInterval(sendBalanceToParent, 1000);
+  </script>
+</body>
+</html>
